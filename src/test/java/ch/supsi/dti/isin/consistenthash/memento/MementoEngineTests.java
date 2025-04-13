@@ -1,10 +1,7 @@
 package ch.supsi.dti.isin.consistenthash.memento;
 
 import static java.util.stream.Collectors.toList;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -444,7 +441,7 @@ public class MementoEngineTests implements Contract<MementoEngine> {
             for (int i = 0; i < r; ++i) {
                 int j = i + random.nextInt(n - i);
                 int bucketToRemove = buckets[j];
-                if (bucketIsRemoved[bucketToRemove] == true) throw new RuntimeException("bucket is already removed");
+                assertFalse(bucketIsRemoved[bucketToRemove]);
                 buckets[j] = buckets[i];
                 engine.removeBucket(bucketToRemove);
                 bucketIsRemoved[bucketToRemove] = true;

@@ -108,7 +108,7 @@ public class MementoEngine implements BucketBasedEngine
             {
                 b = r;
                 r = memento.replacer( b );
-                debug.nestedLoopCounter += 1;
+                if (debug != null) debug.nestedLoopCounter += 1;
             }
                 
             /* Finally we update the entry of the external loop. */
