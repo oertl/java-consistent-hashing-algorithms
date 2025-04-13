@@ -6,16 +6,13 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import ch.supsi.dti.isin.hashfunction.HashFunction;
 import org.junit.jupiter.api.DisplayNameGeneration;
 import org.junit.jupiter.api.DisplayNameGenerator;
 import org.junit.jupiter.api.Test;
@@ -420,6 +417,60 @@ public class MementoEngineTests implements Contract<MementoEngine> {
 
         }
 
+    }
+
+
+    @Test
+    public void test_proposition_18_when_almost_all_nodes_are_removed() {
+
+        int n = 100_000; // size of the b-array
+        int w = 1; // number of working buckets
+        int r = n - w; // number of removed buckets
+
+        int numLookups = 100;
+        int numIterations = 100;
+        long seed = 0x27bc8b24419e36ffL;
+
+        LongSummaryStatistics nestedLoopStatistics = new LongSummaryStatistics();
+        SplittableRandom random = new SplittableRandom(seed);
+
+        for (int k = 0; k < numIterations; ++k) {
+
+            MementoEngine engine = new MementoEngine(n, HashFunction.create(HashFunction.Algorithm.XX));
+
+            // remove randomly r buckets based on Fisher-Yates shuffling
+            int[] buckets = IntStream.range(0, n).toArray();
+            boolean[] bucketIsRemoved = new boolean[n]; // just for verification that same bucket is removed only once
+            for (int i = 0; i < r; ++i) {
+                int j = i + random.nextInt(n - i);
+                int bucketToRemove = buckets[j];
+                if (bucketIsRemoved[bucketToRemove] == true) throw new RuntimeException("bucket is already removed");
+                buckets[j] = buckets[i];
+                engine.removeBucket(bucketToRemove);
+                bucketIsRemoved[bucketToRemove] = true;
+            }
+            assertEquals(n, engine.bArraySize());
+            assertEquals(w, engine.size());
+
+            // do some lookups
+            for (int a = 0; a < numLookups; ++a) {
+                MementoEngine.Debug debug = new MementoEngine.Debug();
+                String key = String.valueOf(random.nextLong());
+                assertEquals(0, debug.nestedLoopCounter);
+                engine.getBucket(key, debug);
+                nestedLoopStatistics.accept(debug.nestedLoopCounter);
+            }
+        }
+
+        assertEquals(numIterations * numLookups, nestedLoopStatistics.getCount());
+        double omega = nestedLoopStatistics.getAverage(); // average number of nested loop iterations
+
+        double x  = Math.log(n / (double)w);
+        double expectation = Math.pow(x, 2.); // see Proposition 18 in paper
+        double standardDeviation = Math.pow(x, 3./2.); // see Proposition 18 in paper
+
+        assertEquals(64694.2431, omega);
+        assertTrue(omega <= expectation + 100 * standardDeviation); // fails !!!
     }
 
 }

@@ -64,9 +64,15 @@ public class MementoEngine implements BucketBasedEngine
      * @return the related bucket
      */
     @Override
-    public int getBucket( String key )
-    {
+    public int getBucket( String key ) {
+        return getBucket(key, null);
+    }
 
+    public static final class Debug {
+        public long nestedLoopCounter;
+    }
+
+    public int getBucket( String key, Debug debug ) {
         /*
          * We invoke JumpHash to get a bucket
          * in the range [0,bArraySize-1].
@@ -102,6 +108,7 @@ public class MementoEngine implements BucketBasedEngine
             {
                 b = r;
                 r = memento.replacer( b );
+                debug.nestedLoopCounter += 1;
             }
                 
             /* Finally we update the entry of the external loop. */
